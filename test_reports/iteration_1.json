@@ -1,0 +1,42 @@
+{
+  "summary": "First-finish smoke test of StreamTrack backend + frontend. All auth endpoints, subscription CRUD, platform templates (15 items incl. Netflix/Disney+/Hulu/Max/Prime Video/Spotify), and dashboard summary work correctly. Frontend flows (login, dashboard stats, subscription add/delete via dialog, renewals timeline, logout with token cleared) all passed end-to-end.",
+  "tested_scope": ["backend", "frontend", "auth", "integration"],
+  "passed": [
+    "POST /api/auth/login returns JWT + user (admin@example.com / admin123)",
+    "GET /api/auth/me returns 401 without token, 200 with Bearer token",
+    "POST /api/auth/register creates user and returns {token, user}",
+    "GET /api/platform-templates returns 15 pre-seeded templates (all required platforms present)",
+    "POST /api/subscriptions returns 201 with id when profile_users passed as [{name}] objects",
+    "GET /api/subscriptions returns current user's subscriptions",
+    "PUT /api/subscriptions/{id} returns 200",
+    "DELETE /api/subscriptions/{id} returns 204",
+    "GET /api/dashboard/summary returns total_monthly, total_yearly, total_subscriptions, total_seats, total_profiles, upcoming_renewals (sorted by days_until), spend_breakdown, region_counts",
+    "Frontend /login renders with StreamTrack branding, right-side status pattern, default admin creds shown",
+    "Login redirects to / and dashboard renders stat-monthly/yearly/subs/seats, renewals list, regions",
+    "Subscriptions page: add-subscription-btn opens dialog; add profile chip; save persists and shows sub-card-<PLATFORM>",
+    "Delete flow shows confirm modal and removes the card",
+    "Renewals page loads with renewals-timeline",
+    "Logout returns to /login and clears streamtrack_token in localStorage"
+  ],
+  "failed": [
+    {
+      "area": "Backend contract vs spec",
+      "issue": "Spec says 'profile_users list' should accept profile names (strings), but backend requires list of ProfileUser objects [{name, color?}]. Sending strings returns 422. Frontend already sends objects so integration works, but the contract diverges from the stated 'list of profile names'.",
+      "evidence": "POST /api/subscriptions with profile_users:[\"Alice\",\"Bob\"] -> 422 model_attributes_type. With [{\"name\":\"Alice\"}] -> 201.",
+      "priority": "LOW"
+    },
+    {
+      "area": "Frontend console warnings",
+      "issue": "Recharts logs 'width(-1)/height(-1)' warnings on dashboard (chart container sizing). Dialog logs a React hydration warning: <span> child of <option> in template-select, plus 'Missing Description/aria-describedby' on DialogContent. Non-blocking but noisy.",
+      "evidence": "Console warnings captured during dashboard + subscription-dialog interactions.",
+      "priority": "LOW"
+    }
+  ],
+  "action_items": [
+    "Optional: align backend profile_users schema with the 'list of profile names' spec OR update the spec/docs to reflect the ProfileUser object contract.",
+    "Optional: fix Recharts container sizing on dashboard and remove <span> inside <option> in SubscriptionDialog template-select; add DialogDescription/aria-describedby to dialogs."
+  ],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "retest_needed": false,
+  "full_testing_deferred": true
+}
