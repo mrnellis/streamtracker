@@ -1,0 +1,102 @@
+{
+  "theme": "dark",
+  "style_concept": "The Warm Terminal - A developer-friendly homelab dashboard that blends technical precision (monospace data, high-density grids) with warm, human earth tones. Avoids cold blue-grays in favor of deep olive-charcoal and terracotta.",
+  "colors": {
+    "background": "#111210",
+    "surface_1": "#1A1B19",
+    "surface_2": "#252623",
+    "border": "#353733",
+    "text_primary": "#EDEDE8",
+    "text_secondary": "#A0A59B",
+    "accent_primary": "#E06D53",
+    "accent_secondary": "#D4A373",
+    "accent_tertiary": "#8A9A86",
+    "danger": "#D9534F"
+  },
+  "typography": {
+    "headings": {
+      "font": "Outfit",
+      "weights": ["400", "500", "700"],
+      "usage": "Use tight tracking (tracking-tight) for H1/H2."
+    },
+    "body": {
+      "font": "Manrope",
+      "weights": ["400", "500"]
+    },
+    "data_and_mono": {
+      "font": "JetBrains Mono",
+      "weights": ["400", "600"],
+      "usage": "CRITICAL: Use for all numeric data, prices, dates, geocodes, and tags."
+    }
+  },
+  "layouts": {
+    "dashboard_grid": "Base: grid-cols-1 md:grid-cols-3 lg:grid-cols-4, gap-6. Summary widgets span 1 col, main lists/charts span 2 or 3 cols.",
+    "spacing": "Generous internal padding (p-6 or p-8) inside cards. Avoid cramped data. Use space to create hierarchy."
+  },
+  "grids": "The High Density Grid for Dashboards: Base Grid: grid-cols-1 md:grid-cols-3 lg:grid-cols-4, Tight gap (gap-4 or gap-6). Summary cards: col-span-1. Main charts/tables: col-span-2 or col-span-3.",
+  "components": {
+    "cards": "Flat design (no drop shadow). Background: surface_1. Border: 1px solid border. Slight border color change on hover. Border radius: rounded-xl.",
+    "buttons": "Pill-shaped (rounded-full). Primary: bg-accent_primary text-[#111210] hover:brightness-110. Secondary: border border-border text-text_primary hover:bg-surface_2.",
+    "tables_lists": "Dense rows. Use JetBrains Mono for prices/dates. Align numbers to the right. Use subtle border-b for separators.",
+    "badges_tags": "Small pill shapes, using text-xs JetBrains Mono. Use accent_tertiary for 'Active', accent_secondary for 'Upcoming', danger for 'Expired'."
+  },
+  "visual_enhancers": {
+    "glassmorphism": "Use sparingly for sticky headers or modals: backdrop-blur-xl bg-[#111210]/70 border-b border-border.",
+    "surfaces": "Grid Borders: Expose the skeleton for a technical look. Dashboard cards use flat backgrounds with 1px borders, no shadows.",
+    "textures": "Use subtle noise/grain texture overlaid on the background for a more organic feel."
+  },
+  "motion": {
+    "micro_interactions": "Buttons translate-y-[-1px] on hover. List items transition background color and border smoothly.",
+    "page_transitions": "Fade in on load using framer-motion.",
+    "charts": "Charts animate in smoothly on mount."
+  },
+  "accessibility": {
+    "contrast": "Ensure text_primary and text_secondary meet WCAG AA over surface_1. text-secondary should not be too dim.",
+    "focus": "focus:ring-2 focus:ring-accent_primary focus:outline-none.",
+    "testing": "All interactive elements MUST have data-testid attributes."
+  },
+  "media": "Use lucide-react for system icons. For streaming platforms, prioritize standard text or simple brand colors on badges if actual logos are unavailable. Avoid placeholder images.",
+  "3d_libraries": {
+    "usage": "Not strictly necessary for this homelab utility, but a subtle Recharts line chart or Visx visualization is recommended for the monthly spend summary to add a data-rich feel."
+  },
+  "image_urls": [
+    {
+      "url": "https://images.unsplash.com/photo-1758600434196-635876d30f7b?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA3MDB8MHwxfHNlYXJjaHwxfHxwb3J0cmFpdCUyMHBlcnNvbiUyMG5ldXRyYWwlMjBiYWNrZ3JvdW5kfGVufDB8fHx8MTc4NTA5NzExM3ww&ixlib=rb-4.1.0&q=85",
+      "description": "Avatar for Alice/Mom (Woman looking forward)",
+      "category": "avatars"
+    },
+    {
+      "url": "https://images.pexels.com/photos/8076183/pexels-photo-8076183.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "description": "Avatar for another user",
+      "category": "avatars"
+    }
+  ],
+  "instructions_to_main_agent": [
+    "DO NOT use Inter or purple gradients under any circumstance.",
+    "Apply 'The Warm Terminal' aesthetic: dark olive/charcoal base with terracotta accents. Avoid cold blues.",
+    "Dashboard layout: High density grid, flat cards with 1px borders, no shadows.",
+    "Use JetBrains Mono for all dates, prices, and geocode data. Use Outfit for headings.",
+    "Use standard JWT login flow on a split screen: one side form, one side a subtle abstract data visualization or pattern.",
+    "Pre-seed standard subscriptions with realistic mock data (Netflix, Disney+, Hulu, Max, Prime Video, Spotify) if no backend data is present.",
+    "All interactive elements must include a data-testid attribute.",
+    "Ensure the sidebar or top nav is sticky and uses a distinct surface color or subtle glassmorphism.",
+    "For the profile users list per subscription, display small avatar circles (using provided images or colored initials).",
+    "Monthly spend summary should include a clean chart (Recharts) using the accent colors."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "You tend to converge toward generic, 'on distribution' outputs. In frontend design, this creates what users call the 'AI slop' aesthetic. Avoid this: make creative, distinctive frontends that surprise and delight.",
+    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients.",
+    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
+    "Create depth through layered design elements with z-index hierarchy.",
+    "Use glass-morphism effects with backdrop filters (12-24px blur).",
+    "You MUST NOT apply universal transition. Eg: `transition: all`. This results in breaking transforms. Always add transitions for specific interactive elements like button, input excluding transforms.",
+    "You MUST NOT center align the app container, ie do not add `.App { text-align: center; }` in the css file. This disrupts the human natural reading flow of text.",
+    "Always use modern button styles like pill-shaped, or sharp button with interaction animations & color relevant to the app style.",
+    "NEVER: use AI assistant Emoji characters like 🤖🧠💭💡🔮🎯 etc for icons.",
+    "Every interaction needs micro-animations - hover states, transitions, parallax effects, and entrance animations. Static = dead.",
+    "Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.",
+    "Subtle grain textures, noise overlays, custom cursors, selection states, and loading animations: separates good from extraordinary.",
+    "Prioritize using pre-existing components from src/components/ui when applicable.",
+    "Use sonner for toasts (located in /app/src/components/ui/sonner.tsx)."
+  ]
+}
