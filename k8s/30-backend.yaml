@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: streamtrack-backend
+  namespace: streamtrack
+  labels:
+    app: streamtrack-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: streamtrack-backend
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: streamtrack-backend
+    spec:
+      containers:
+        - name: backend
+          # Build with: docker build -t <registry>/streamtrack-backend:latest ./backend
+          image: streamtrack-backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8001
+          env:
+            - name: MONGO_URL
+              value: "mongodb://$(MONGO_ROOT_USER):$(MONGO_ROOT_PASSWORD)@streamtrack-mongo.streamtrack.svc.cluster.local:27017/?authSource=admin"
+            - name: MONGO_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: streamtrack-secrets
+                  key: MONGO_ROOT_USER
+            - name: MONGO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: streamtrack-secrets
+                  key: MONGO_ROOT_PASSWORD
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: streamtrack-config
+                  key: DB_NAME
+            - name: CORS_ORIGINS
+              valueFrom:
+                configMapKeyRef:
+                  name: streamtrack-config
+                  key: CORS_ORIGINS
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: streamtrack-secrets
+                  key: JWT_SECRET
+            - name: ADMIN_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: streamtrack-secrets
+                  key: ADMIN_EMAIL
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: streamtrack-secrets
+                  key: ADMIN_PASSWORD
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 8001
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 8001
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: streamtrack-backend
+  namespace: streamtrack
+spec:
+  selector:
+    app: streamtrack-backend
+  ports:
+    - name: http
+      port: 8001
+      targetPort: 8001
+  type: ClusterIP

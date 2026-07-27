@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import SubscriptionDialog from "@/components/SubscriptionDialog";
-import { Plus, Pencil, Trash2, Users } from "lucide-react";
+import { Plus, Pencil, Trash2, Users, Download } from "lucide-react";
 import { toast } from "sonner";
 
 function fmt(n, curr = "USD") {
@@ -65,16 +65,41 @@ export default function Subscriptions() {
             {subs.length} active {subs.length === 1 ? "plan" : "plans"} tracked.
           </p>
         </div>
-        <button
-          data-testid="add-subscription-btn"
-          onClick={() => {
-            setEditing(null);
-            setDialogOpen(true);
-          }}
-          className="st-btn-primary px-5 py-2.5 text-sm inline-flex items-center gap-2 self-start md:self-auto"
-        >
-          <Plus className="h-4 w-4" /> Add subscription
-        </button>
+        <div className="flex gap-2 self-start md:self-auto">
+          <button
+            data-testid="export-csv-btn"
+            onClick={async () => {
+              try {
+                const r = await api.get("/subscriptions/export/csv", { responseType: "blob" });
+                const url = URL.createObjectURL(new Blob([r.data], { type: "text/csv" }));
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `streamtrack-subscriptions-${new Date().toISOString().slice(0, 10)}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+                toast.success("CSV exported");
+              } catch (e) {
+                toast.error("Export failed");
+              }
+            }}
+            disabled={subs.length === 0}
+            className="st-btn-secondary px-4 py-2.5 text-sm inline-flex items-center gap-2 disabled:opacity-40"
+          >
+            <Download className="h-4 w-4" /> Export CSV
+          </button>
+          <button
+            data-testid="add-subscription-btn"
+            onClick={() => {
+              setEditing(null);
+              setDialogOpen(true);
+            }}
+            className="st-btn-primary px-5 py-2.5 text-sm inline-flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" /> Add subscription
+          </button>
+        </div>
       </header>
 
       {loading ? (

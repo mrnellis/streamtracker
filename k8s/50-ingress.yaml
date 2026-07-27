@@ -1,0 +1,31 @@
+# Ingress: routes /api/* to backend, everything else to the SPA.
+# Requires an ingress controller (nginx-ingress, Traefik, etc.) in the cluster.
+# Change `host:` to whatever DNS name resolves to your cluster.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: streamtrack
+  namespace: streamtrack
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    # traefik.ingress.kubernetes.io/router.entrypoints: web
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: streamtrack.local
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: streamtrack-backend
+                port:
+                  number: 8001
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: streamtrack-frontend
+                port:
+                  number: 80

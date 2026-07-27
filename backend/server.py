@@ -5,6 +5,8 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
 
 import os
+import io
+import csv
 import logging
 import uuid
 from datetime import datetime, timezone, timedelta
@@ -14,6 +16,7 @@ import bcrypt
 import jwt
 from bson import ObjectId
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request
+from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -308,6 +311,50 @@ PLATFORM_TEMPLATES = [
     {"platform": "Peacock", "tier": "Premium", "monthly_price": 7.99, "concurrent_users": 3, "brand_color": "#F5A623"},
     {"platform": "Paramount+", "tier": "Standard", "monthly_price": 5.99, "concurrent_users": 3, "brand_color": "#0064FF"},
 ]
+
+
+@api_router.get("/subscriptions/export/csv")
+async def export_subscriptions_csv(current_user: dict = Depends(get_current_user)):
+    docs = await db.subscriptions.find({"owner_id": current_user["id"]}, {"_id": 0}).to_list(1000)
+    docs.sort(key=lambda x: x.get("next_payment_date", ""))
+
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow([
+        "platform", "tier", "monthly_price", "currency",
+        "yearly_price", "concurrent_users", "region",
+        "next_payment_date", "profile_users", "profile_count",
+        "notes", "created_at",
+    ])
+    total_monthly = 0.0
+    for d in docs:
+        price = float(d.get("monthly_price", 0) or 0)
+        total_monthly += price
+        writer.writerow([
+            d.get("platform", ""),
+            d.get("tier", ""),
+            f"{price:.2f}",
+            d.get("currency", "USD"),
+            f"{price * 12:.2f}",
+            d.get("concurrent_users", ""),
+            d.get("region", ""),
+            d.get("next_payment_date", ""),
+            "; ".join(p.get("name", "") for p in d.get("profile_users", [])),
+            len(d.get("profile_users", [])),
+            (d.get("notes") or "").replace("\n", " "),
+            d.get("created_at", ""),
+        ])
+    # totals row
+    writer.writerow([])
+    writer.writerow(["TOTAL", "", f"{total_monthly:.2f}", "", f"{total_monthly * 12:.2f}", "", "", "", "", "", "", ""])
+
+    buf.seek(0)
+    filename = f"streamtrack-subscriptions-{datetime.now(timezone.utc).strftime('%Y%m%d')}.csv"
+    return StreamingResponse(
+        iter([buf.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @api_router.get("/platform-templates")
