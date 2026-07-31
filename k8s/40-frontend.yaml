@@ -15,6 +15,13 @@ spec:
       labels:
         app: streamtrack-frontend
     spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101          # nginx user in nginxinc/nginx-unprivileged
+        runAsGroup: 101
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: frontend
           # Build with:
@@ -22,13 +29,24 @@ spec:
           #     -t <registry>/streamtrack-frontend:latest ./frontend
           image: streamtrack-frontend:latest
           imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
           ports:
             - name: http
-              containerPort: 80
+              containerPort: 8080
+          volumeMounts:
+            # nginx needs these writable; the rest of the filesystem does not.
+            - name: tmp
+              mountPath: /tmp
+            - name: nginx-cache
+              mountPath: /var/cache/nginx
           readinessProbe:
             httpGet:
               path: /
-              port: 80
+              port: 8080
             initialDelaySeconds: 5
             periodSeconds: 10
           resources:
@@ -38,6 +56,11 @@ spec:
             limits:
               cpu: "200m"
               memory: "128Mi"
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: nginx-cache
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
@@ -50,5 +73,5 @@ spec:
   ports:
     - name: http
       port: 80
-      targetPort: 80
+      targetPort: 8080
   type: ClusterIP

@@ -17,11 +17,23 @@ spec:
       labels:
         app: streamtrack-backend
     spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000         # `app` user created in backend/Dockerfile
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: backend
           # Build with: docker build -t <registry>/streamtrack-backend:latest ./backend
           image: streamtrack-backend:latest
           imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
           ports:
             - name: http
               containerPort: 8001
@@ -75,6 +87,9 @@ spec:
               port: 8001
             initialDelaySeconds: 30
             periodSeconds: 20
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           resources:
             requests:
               cpu: "50m"
@@ -82,6 +97,9 @@ spec:
             limits:
               cpu: "500m"
               memory: "512Mi"
+      volumes:
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service

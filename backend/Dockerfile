@@ -15,6 +15,11 @@ RUN pip install --no-cache-dir --upgrade pip \
 
 COPY . .
 
+# Run as a real non-root user. The pod spec sets runAsUser 1000 to match; a
+# matching passwd entry keeps anything that calls getpwuid() from failing.
+RUN useradd --create-home --uid 1000 --user-group app
+USER app
+
 EXPOSE 8001
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \

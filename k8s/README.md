@@ -4,8 +4,18 @@ Self-host StreamTrack on your homelab cluster.
 
 ## Prerequisites
 - A Kubernetes cluster (k3s, k0s, microk8s, kind, or full k8s all work)
-- An ingress controller (nginx-ingress or Traefik). k3s ships with Traefik by default.
+- An ingress controller. `50-ingress.yaml` targets **Traefik**, which k3s ships
+  and enables by default. On nginx-ingress, change `ingressClassName` to `nginx`.
 - A container registry your cluster can pull from **OR** load images locally (see below)
+
+## 0. Generate the frontend lockfile (first time only)
+
+The frontend build requires `frontend/yarn.lock` and will fail without it.
+Generate and commit it once:
+
+```bash
+cd frontend && yarn install && git add yarn.lock && git commit -m "Add yarn.lock"
+```
 
 ## 1. Build the images
 
@@ -21,7 +31,7 @@ docker build \
 ```
 
 ### Loading images without a registry
-- **k3s:**   `docker save streamtrack-backend:latest | sudo k3s ctr images import -`
+- **k3s:**   `docker save streamtrack-backend:latest streamtrack-frontend:latest | sudo k3s ctr images import -`
 - **kind:**  `kind load docker-image streamtrack-backend:latest streamtrack-frontend:latest`
 - **microk8s:** `docker save streamtrack-backend:latest > /tmp/be.tar && microk8s ctr image import /tmp/be.tar`
 
@@ -83,6 +93,27 @@ Open your browser → `http://streamtrack.local` and log in with the admin crede
    ┌────────────┐
    │  Mongo SS  │  PVC (5Gi)
    └────────────┘
+```
+
+## Security posture
+
+All three workloads run with:
+- `runAsNonRoot` + an explicit UID (backend 1000, frontend 101, Mongo 999)
+- `allowPrivilegeEscalation: false`, all capabilities dropped, `seccompProfile: RuntimeDefault`
+- `readOnlyRootFilesystem: true`, with `emptyDir` mounts for the few paths that
+  genuinely need writes (`/tmp`, nginx's cache, Mongo's `/data/configdb`)
+- `automountServiceAccountToken: false` — nothing here talks to the API server
+
+Two consequences worth knowing:
+- The frontend container listens on **8080**, not 80 (a non-root process cannot
+  bind a privileged port). The Service still publishes port 80, so the Ingress
+  is unchanged.
+- Mongo's PVC is chowned to GID 999 by `fsGroup`. On an **existing** volume with
+  different ownership, the pod will fail to start until the data is chowned.
+
+Verify after applying:
+```bash
+kubectl -n streamtrack get pods -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.securityContext.runAsUser}{"\n"}{end}'
 ```
 
 ## Scaling notes
