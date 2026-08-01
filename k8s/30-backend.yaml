@@ -27,7 +27,7 @@ spec:
       containers:
         - name: backend
           # Build with: docker build -t <registry>/streamtrack-backend:latest ./backend
-          image: streamtrack-backend:latest
+          image: localhost/streamtrack-backend:0.1.0
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false

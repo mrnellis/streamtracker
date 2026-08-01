@@ -27,7 +27,7 @@ spec:
           # Build with:
           #   docker build --build-arg REACT_APP_BACKEND_URL=http://streamtrack.local \
           #     -t <registry>/streamtrack-frontend:latest ./frontend
-          image: streamtrack-frontend:latest
+          image: localhost/streamtrack-frontend:0.1.0
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false

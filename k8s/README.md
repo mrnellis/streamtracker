@@ -21,17 +21,17 @@ cd frontend && yarn install && git add yarn.lock && git commit -m "Add yarn.lock
 
 ```bash
 # From repo root
-docker build -t streamtrack-backend:latest ./backend
+docker build -t localhost/streamtrack-backend:0.1.0 ./backend
 
 # The frontend bakes REACT_APP_BACKEND_URL at build time.
 # Set it to the URL your browser will use to reach the ingress.
 docker build \
   --build-arg REACT_APP_BACKEND_URL=http://streamtrack.local \
-  -t streamtrack-frontend:latest ./frontend
+  -t localhost/streamtrack-frontend:0.1.0 ./frontend
 ```
 
 ### Loading images without a registry
-- **k3s:**   `docker save streamtrack-backend:latest streamtrack-frontend:latest | sudo k3s ctr images import -`
+- **k3s:**   `docker save localhost/streamtrack-backend:0.1.0 localhost/streamtrack-frontend:0.1.0 | sudo k3s ctr images import -`
 - **kind:**  `kind load docker-image streamtrack-backend:latest streamtrack-frontend:latest`
 - **microk8s:** `docker save streamtrack-backend:latest > /tmp/be.tar && microk8s ctr image import /tmp/be.tar`
 
