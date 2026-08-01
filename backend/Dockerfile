@@ -3,9 +3,10 @@ FROM docker.io/library/python:3.11-slim
 
 WORKDIR /app
 
-# System deps for bcrypt / cryptography
+# No compiler needed: every runtime dependency ships a manylinux wheel.
+# curl is here only for the HEALTHCHECK below (Kubernetes ignores that and
+# uses the probes in k8s/30-backend.yaml instead).
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      build-essential \
       curl \
     && rm -rf /var/lib/apt/lists/*
 
