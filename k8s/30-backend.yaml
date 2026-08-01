@@ -38,8 +38,10 @@ spec:
             - name: http
               containerPort: 8001
           env:
-            - name: MONGO_URL
-              value: "mongodb://$(MONGO_ROOT_USER):$(MONGO_ROOT_PASSWORD)@streamtrack-mongo.streamtrack.svc.cluster.local:27017/?authSource=admin"
+            # MONGO_ROOT_USER/PASSWORD must be declared BEFORE MONGO_URL.
+            # Kubernetes only expands $(VAR) against variables defined earlier
+            # in this list; declared after, the references stay literal and
+            # Mongo rejects the connection with AuthenticationFailed.
             - name: MONGO_ROOT_USER
               valueFrom:
                 secretKeyRef:
@@ -50,6 +52,8 @@ spec:
                 secretKeyRef:
                   name: streamtrack-secrets
                   key: MONGO_ROOT_PASSWORD
+            - name: MONGO_URL
+              value: "mongodb://$(MONGO_ROOT_USER):$(MONGO_ROOT_PASSWORD)@streamtrack-mongo.streamtrack.svc.cluster.local:27017/?authSource=admin"
             - name: DB_NAME
               valueFrom:
                 configMapKeyRef:
