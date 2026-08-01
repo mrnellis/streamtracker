@@ -1,5 +1,5 @@
 # StreamTrack frontend — build + nginx serve
-FROM node:20-alpine AS builder
+FROM docker.io/library/node:20-alpine AS builder
 
 WORKDIR /app
 # yarn.lock is required, not optional. The `resolutions` block in package.json
@@ -18,7 +18,7 @@ RUN yarn build
 
 # Unprivileged nginx: runs as UID 101, listens on 8080, and keeps its pid and
 # temp paths out of the root filesystem so readOnlyRootFilesystem works.
-FROM nginxinc/nginx-unprivileged:1.27-alpine
+FROM docker.io/nginxinc/nginx-unprivileged:1.27-alpine
 
 # This base image ends with USER 101, so build steps need root explicitly.
 USER root
