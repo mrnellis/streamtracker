@@ -1,5 +1,6 @@
 # Ingress: routes /api/* to backend, everything else to the SPA.
-# Requires an ingress controller (nginx-ingress, Traefik, etc.) in the cluster.
+# Assumes k3s, which ships Traefik as the default ingress controller.
+# On a cluster running nginx-ingress instead, set ingressClassName to `nginx`.
 # Change `host:` to whatever DNS name resolves to your cluster.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -7,12 +8,11 @@ metadata:
   name: streamtrack
   namespace: streamtrack
   annotations:
-    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
-    # traefik.ingress.kubernetes.io/router.entrypoints: web
+    traefik.ingress.kubernetes.io/router.entrypoints: web
 spec:
-  ingressClassName: nginx
+  ingressClassName: traefik
   rules:
-    - host: streamtrack.local
+    - host: streamtrack.lab.home.arpa
       http:
         paths:
           - path: /api

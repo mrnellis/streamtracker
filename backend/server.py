@@ -203,6 +203,52 @@ async def create_subscription(payload: SubscriptionInput, current_user: dict = D
     return doc
 
 
+# NOTE: must stay above /subscriptions/{sub_id} — FastAPI matches in registration
+# order, so a later literal path would be swallowed by the parameterized route.
+@api_router.get("/subscriptions/export/csv")
+async def export_subscriptions_csv(current_user: dict = Depends(get_current_user)):
+    docs = await db.subscriptions.find({"owner_id": current_user["id"]}, {"_id": 0}).to_list(1000)
+    docs.sort(key=lambda x: x.get("next_payment_date", ""))
+
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow([
+        "platform", "tier", "monthly_price", "currency",
+        "yearly_price", "concurrent_users", "region",
+        "next_payment_date", "profile_users", "profile_count",
+        "notes", "created_at",
+    ])
+    total_monthly = 0.0
+    for d in docs:
+        price = float(d.get("monthly_price", 0) or 0)
+        total_monthly += price
+        writer.writerow([
+            d.get("platform", ""),
+            d.get("tier", ""),
+            f"{price:.2f}",
+            d.get("currency", "USD"),
+            f"{price * 12:.2f}",
+            d.get("concurrent_users", ""),
+            d.get("region", ""),
+            d.get("next_payment_date", ""),
+            "; ".join(p.get("name", "") for p in d.get("profile_users", [])),
+            len(d.get("profile_users", [])),
+            (d.get("notes") or "").replace("\n", " "),
+            d.get("created_at", ""),
+        ])
+    # totals row
+    writer.writerow([])
+    writer.writerow(["TOTAL", "", f"{total_monthly:.2f}", "", f"{total_monthly * 12:.2f}", "", "", "", "", "", "", ""])
+
+    buf.seek(0)
+    filename = f"streamtrack-subscriptions-{datetime.now(timezone.utc).strftime('%Y%m%d')}.csv"
+    return StreamingResponse(
+        iter([buf.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 @api_router.get("/subscriptions/{sub_id}", response_model=SubscriptionOut)
 async def get_subscription(sub_id: str, current_user: dict = Depends(get_current_user)):
     doc = await db.subscriptions.find_one({"id": sub_id, "owner_id": current_user["id"]}, {"_id": 0})
@@ -313,50 +359,6 @@ PLATFORM_TEMPLATES = [
 ]
 
 
-@api_router.get("/subscriptions/export/csv")
-async def export_subscriptions_csv(current_user: dict = Depends(get_current_user)):
-    docs = await db.subscriptions.find({"owner_id": current_user["id"]}, {"_id": 0}).to_list(1000)
-    docs.sort(key=lambda x: x.get("next_payment_date", ""))
-
-    buf = io.StringIO()
-    writer = csv.writer(buf)
-    writer.writerow([
-        "platform", "tier", "monthly_price", "currency",
-        "yearly_price", "concurrent_users", "region",
-        "next_payment_date", "profile_users", "profile_count",
-        "notes", "created_at",
-    ])
-    total_monthly = 0.0
-    for d in docs:
-        price = float(d.get("monthly_price", 0) or 0)
-        total_monthly += price
-        writer.writerow([
-            d.get("platform", ""),
-            d.get("tier", ""),
-            f"{price:.2f}",
-            d.get("currency", "USD"),
-            f"{price * 12:.2f}",
-            d.get("concurrent_users", ""),
-            d.get("region", ""),
-            d.get("next_payment_date", ""),
-            "; ".join(p.get("name", "") for p in d.get("profile_users", [])),
-            len(d.get("profile_users", [])),
-            (d.get("notes") or "").replace("\n", " "),
-            d.get("created_at", ""),
-        ])
-    # totals row
-    writer.writerow([])
-    writer.writerow(["TOTAL", "", f"{total_monthly:.2f}", "", f"{total_monthly * 12:.2f}", "", "", "", "", "", "", ""])
-
-    buf.seek(0)
-    filename = f"streamtrack-subscriptions-{datetime.now(timezone.utc).strftime('%Y%m%d')}.csv"
-    return StreamingResponse(
-        iter([buf.getvalue()]),
-        media_type="text/csv",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
-    )
-
-
 @api_router.get("/platform-templates")
 async def get_platform_templates(current_user: dict = Depends(get_current_user)):
     return PLATFORM_TEMPLATES
@@ -385,7 +387,7 @@ async def startup_event():
     await db.users.create_index("email", unique=True)
     await db.subscriptions.create_index("owner_id")
     admin_email = os.environ.get("ADMIN_EMAIL", "admin@homelab.local").lower()
-    admin_password = os.environ.get("ADMIN_PASSWORD", "admin123")
+    admin_password = os.environ["ADMIN_PASSWORD"]
     existing = await db.users.find_one({"email": admin_email})
     if not existing:
         await db.users.insert_one({
@@ -398,13 +400,10 @@ async def startup_event():
         })
         logger.info(f"Seeded admin user: {admin_email}")
     else:
-        # sync password if env changed
-        if not verify_password(admin_password, existing["password_hash"]):
-            await db.users.update_one(
-                {"email": admin_email},
-                {"$set": {"password_hash": hash_password(admin_password)}},
-            )
-            logger.info(f"Updated admin password for: {admin_email}")
+        # Deliberately does NOT resync the password from the environment. Doing
+        # so silently reverted any password change made in the app on the next
+        # pod restart. To reset a lost admin password, delete the user document.
+        logger.info(f"Admin user already present, leaving credentials alone: {admin_email}")
 
 
 @app.on_event("shutdown")

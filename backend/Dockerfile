@@ -1,5 +1,5 @@
 # StreamTrack backend
-FROM python:3.11-slim
+FROM docker.io/library/python:3.11-slim
 
 WORKDIR /app
 
@@ -14,6 +14,11 @@ RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
 COPY . .
+
+# Run as a real non-root user. The pod spec sets runAsUser 1000 to match; a
+# matching passwd entry keeps anything that calls getpwuid() from failing.
+RUN useradd --create-home --uid 1000 --user-group app
+USER app
 
 EXPOSE 8001
 
